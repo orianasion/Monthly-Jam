@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using Unity.VisualScripting;
 
 public class InteractiveShadows : MonoBehaviour
-{
+{   
     [SerializeField] private Transform shadowTransform;
 
     [SerializeField] private Transform lightTransform;
@@ -16,8 +16,13 @@ public class InteractiveShadows : MonoBehaviour
 
     private Vector3[] objectVertices;
 
+    [SerializeField] private GameObject shadowObject;
     private Mesh shadowColliderMesh;
+    private Vector3[] shadowColliderVertices; // same as intersection points
     private MeshCollider shadowCollider;
+    private MeshRenderer shadowRenderer; //
+    [SerializeField] Material shadowMaterial;
+
 
     private Vector3 previousPosition;
     private Quaternion previousRotation;
@@ -42,7 +47,8 @@ public class InteractiveShadows : MonoBehaviour
         Mesh sourceMesh = GetComponent<MeshFilter>().sharedMesh;
         objectVertices = sourceMesh.vertices;
 
-        shadowColliderMesh = new Mesh();
+        //shadowColliderMesh = new Mesh();
+        shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
     }
 
     private void Update()
@@ -52,6 +58,7 @@ public class InteractiveShadows : MonoBehaviour
 
     private void FixedUpdate()
     {
+        
         // collision detection only occurs during FixedUpdate, so no reason to update the collider every frame
 
         if (TransformHasChanged() && canUpdateCollider)
@@ -79,6 +86,8 @@ public class InteractiveShadows : MonoBehaviour
     private void UpdateShadowCollider()
     {
         shadowColliderMesh.vertices = ComputeShadowColliderMeshVertices();
+        shadowColliderMesh.RecalculateNormals();
+
         shadowCollider.sharedMesh = shadowColliderMesh;
         canUpdateCollider = true;
     }
@@ -88,6 +97,7 @@ public class InteractiveShadows : MonoBehaviour
         int n = objectVertices.Length;
 
         Vector3[] points = new Vector3[2 * n];
+        Vector3[] shadowColliderVertices = new Vector3[n];
 
         rayStartPoints = new Vector3[n];
         rayEndPoints = new Vector3[n];
@@ -106,8 +116,12 @@ public class InteractiveShadows : MonoBehaviour
             rayStartPoints[i] = objectPoint;
             rayEndPoints[i] = ComputeIntersectionPoint(objectPoint, raycastDirection); // surface points
 
-            points[i] = shadowTransform.InverseTransformPoint(rayEndPoints[i]);
-            points[n + i] = shadowTransform.InverseTransformPoint(ComputeExtrusionPoint(objectPoint, points[i]));
+            shadowColliderVertices[i] = rayStartPoints[i]; // don't have to keep using shadowCollider vertices
+
+            points[i] = rayEndPoints[i];
+            points[n + i] = ComputeExtrusionPoint(objectPoint, points[i]);
+            //points[i] = shadowTransform.InverseTransformPoint(rayEndPoints[i]);
+            //points[n + i] = shadowTransform.InverseTransformPoint(ComputeExtrusionPoint(objectPoint, points[i]));
         }
 
         return points;
@@ -143,16 +157,40 @@ public class InteractiveShadows : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (shadowCollider != null)
+        if (shadowColliderVertices == null || shadowColliderMesh == null || shadowTransform == null)
         {
-            Gizmos.color = Color.green;
-            Gizmos.matrix = transform.localToWorldMatrix;
-
-            //for (int i = 0; i < shadowColliderVertices.Length; i++)
-            //{
-            //    Gizmos.DrawWireSphere(shadowColliderVertices[i], 0.05f);
-            //}
+            //Debug.Log(shadowColliderVertices);
+            //Debug.Log(shadowColliderMesh);
+            //Debug.Log(shadowTransform);
+            return;
         }
-    }
 
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Color preiousColor = Gizmos.color;
+
+        Gizmos.matrix = Matrix4x4.identity;
+
+        Vector3[] vertices = shadowColliderMesh.vertices;
+
+        if (vertices.Length >= shadowColliderVertices.Length)
+        {
+            for (int i = 0; i < shadowColliderVertices.Length; i++)
+            {
+                Vector3 hit = shadowTransform.TransformPoint(vertices[i]);
+
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(shadowColliderVertices[i], hit);
+
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireSphere(hit, 0.05f);
+            }
+        }
+
+        Gizmos.matrix = shadowTransform.localToWorldMatrix;
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireMesh(shadowColliderMesh);
+
+        Gizmos.matrix = previousMatrix;
+        Gizmos.color = preiousColor;
+    }
 }
