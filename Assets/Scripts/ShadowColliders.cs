@@ -5,7 +5,7 @@ using Unity.VisualScripting;
 
 public class InteractiveShadows : MonoBehaviour
 {   
-    [SerializeField] private Transform shadowTransform;
+    //[SerializeField] private Transform shadowTransform;
 
     [SerializeField] private Transform lightTransform;
     private LightType lightType;
@@ -34,7 +34,6 @@ public class InteractiveShadows : MonoBehaviour
     private Vector3[] rayEndPoints;
 
     private bool canUpdateCollider = true;
-
     [SerializeField][Range(0.02f, 1f)] private float shadowColliderUpdateTime = 0.00f; // may not want a delay
 
     private void Awake()
@@ -49,36 +48,46 @@ public class InteractiveShadows : MonoBehaviour
 
         //shadowColliderMesh = new Mesh();
         shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
+
+        //MeshRenderer renderer = shadowObject.GetComponent<MeshRenderer>();
+        //renderer.enabled = true;
+        //renderer.sharedMaterial = shadowMaterial;
     }
 
     private void Update()
     {
-        shadowTransform.position = transform.position;
+        //shadowTransform.position = transform.position;
     }
 
     private void FixedUpdate()
     {
         
         // collision detection only occurs during FixedUpdate, so no reason to update the collider every frame
-
+        
         if (TransformHasChanged() && canUpdateCollider)
         {
             //shadowColliderMesh.vertices = ComputeShadowColliderMeshVertices();
             //shadowCollider.sharedMesh = shadowColliderMesh;
+
             Invoke("UpdateShadowCollider", shadowColliderUpdateTime);
+
             canUpdateCollider = false;
         }
 
         previousPosition = transform.position;
         previousRotation = transform.rotation;
         previousScale = transform.localScale;
+        
+
+
+        //UpdateShadowCollider();
     }
 
     private void InitializeShadowCollider()
     {
-        GameObject shadowGameObject = shadowTransform.gameObject;
-        shadowGameObject.hideFlags = HideFlags.HideInHierarchy; // hides it from the inspector, doesn’t change functionality
-        shadowCollider = shadowGameObject.AddComponent<MeshCollider>();
+        //GameObject shadowGameObject = shadowTransform.gameObject;
+        //shadowGameObject.hideFlags = HideFlags.HideInHierarchy; // hides it from the inspector, doesn’t change functionality
+        shadowCollider = shadowObject.GetComponent<MeshCollider>();
         shadowCollider.convex = true; // why is this important?
         shadowCollider.isTrigger = true; // depends on what you want the collider to do
     }
@@ -86,9 +95,12 @@ public class InteractiveShadows : MonoBehaviour
     private void UpdateShadowCollider()
     {
         shadowColliderMesh.vertices = ComputeShadowColliderMeshVertices();
+        shadowColliderMesh.RecalculateBounds();
         shadowColliderMesh.RecalculateNormals();
 
+        shadowCollider.sharedMesh = null;
         shadowCollider.sharedMesh = shadowColliderMesh;
+        
         canUpdateCollider = true;
     }
 
@@ -97,7 +109,7 @@ public class InteractiveShadows : MonoBehaviour
         int n = objectVertices.Length;
 
         Vector3[] points = new Vector3[2 * n];
-        Vector3[] shadowColliderVertices = new Vector3[n];
+        shadowColliderVertices = new Vector3[n]; /////////////////
 
         rayStartPoints = new Vector3[n];
         rayEndPoints = new Vector3[n];
@@ -116,12 +128,17 @@ public class InteractiveShadows : MonoBehaviour
             rayStartPoints[i] = objectPoint;
             rayEndPoints[i] = ComputeIntersectionPoint(objectPoint, raycastDirection); // surface points
 
+            Debug.Log(rayEndPoints[i]);
+
             shadowColliderVertices[i] = rayStartPoints[i]; // don't have to keep using shadowCollider vertices
 
-            points[i] = rayEndPoints[i];
-            points[n + i] = ComputeExtrusionPoint(objectPoint, points[i]);
-            //points[i] = shadowTransform.InverseTransformPoint(rayEndPoints[i]);
-            //points[n + i] = shadowTransform.InverseTransformPoint(ComputeExtrusionPoint(objectPoint, points[i]));
+            // for level surface colliders --> needs debugging still:(
+            //points[i] = shadowObject.transform.InverseTransformPoint(rayEndPoints[i]);
+            //points[n + i] = shadowObject.transform.InverseTransformPoint(ComputeExtrusionPoint(objectPoint, points[i]));
+
+            // for colliders which follow the light rays
+            points[i] = shadowObject.transform.InverseTransformPoint(rayStartPoints[i]);
+            points[n + i] = shadowObject.transform.InverseTransformPoint(rayEndPoints[i]);
         }
 
         return points;
@@ -129,9 +146,11 @@ public class InteractiveShadows : MonoBehaviour
 
     private Vector3 ComputeIntersectionPoint(Vector3 objectPoint, Vector3 direction)
     {
+        direction.Normalize();
+        
         RaycastHit hit;
 
-        if (Physics.Raycast(objectPoint, direction, out hit, maxRayDistance, targetLayerMask, QueryTriggerInteraction.Ignore)) 
+        if (Physics.Raycast(objectPoint, direction, out hit, maxRayDistance, ~0 /*targetLayerMask*/, QueryTriggerInteraction.Ignore)) 
         {
             return hit.point;
         }
@@ -157,38 +176,29 @@ public class InteractiveShadows : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (shadowColliderVertices == null || shadowColliderMesh == null || shadowTransform == null)
-        {
-            //Debug.Log(shadowColliderVertices);
-            //Debug.Log(shadowColliderMesh);
-            //Debug.Log(shadowTransform);
-            return;
-        }
-
         Matrix4x4 previousMatrix = Gizmos.matrix;
         Color preiousColor = Gizmos.color;
 
         Gizmos.matrix = Matrix4x4.identity;
 
-        Vector3[] vertices = shadowColliderMesh.vertices;
-
-        if (vertices.Length >= shadowColliderVertices.Length)
+        if (rayStartPoints != null && rayEndPoints != null)
         {
-            for (int i = 0; i < shadowColliderVertices.Length; i++)
+            for (int i = 0; i < rayStartPoints.Length; i++)
             {
-                Vector3 hit = shadowTransform.TransformPoint(vertices[i]);
-
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(shadowColliderVertices[i], hit);
+                Gizmos.DrawLine(rayStartPoints[i], rayEndPoints[i]);
 
                 Gizmos.color = Color.green;
-                Gizmos.DrawWireSphere(hit, 0.05f);
+                Gizmos.DrawWireSphere(rayEndPoints[i], 0.05f);
             }
         }
-
-        Gizmos.matrix = shadowTransform.localToWorldMatrix;
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireMesh(shadowColliderMesh);
+        /*
+        if (shadowColliderMesh != null && shadowTransform != null)
+        {
+            Gizmos.matrix = shadowTransform.localToWorldMatrix;
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireMesh(shadowColliderMesh);
+        }*/
 
         Gizmos.matrix = previousMatrix;
         Gizmos.color = preiousColor;
