@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine.UI;
 using Unity.VisualScripting;
 
-public class InteractiveShadows : MonoBehaviour
+public class ShadowColliders : MonoBehaviour
 {   
     //[SerializeField] private Transform shadowTransform;
 
@@ -20,8 +20,7 @@ public class InteractiveShadows : MonoBehaviour
     private Mesh shadowColliderMesh;
     private Vector3[] shadowColliderVertices; // same as intersection points
     private MeshCollider shadowCollider;
-    private MeshRenderer shadowRenderer; //
-    [SerializeField] Material shadowMaterial;
+    private MeshRenderer shadowRenderer;
 
 
     private Vector3 previousPosition;
@@ -29,6 +28,7 @@ public class InteractiveShadows : MonoBehaviour
     private Vector3 previousScale;
 
     [SerializeField] private float maxRayDistance = 100f;
+    [SerializeField] private float extendColliderBy = 20f;
 
     private Vector3[] rayStartPoints; // world space
     private Vector3[] rayEndPoints;
@@ -47,6 +47,8 @@ public class InteractiveShadows : MonoBehaviour
         objectVertices = sourceMesh.vertices;
 
         //shadowColliderMesh = new Mesh();
+
+
         shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
 
         //MeshRenderer renderer = shadowObject.GetComponent<MeshRenderer>();
@@ -86,10 +88,15 @@ public class InteractiveShadows : MonoBehaviour
     private void InitializeShadowCollider()
     {
         //GameObject shadowGameObject = shadowTransform.gameObject;
-        //shadowGameObject.hideFlags = HideFlags.HideInHierarchy; // hides it from the inspector, doesn’t change functionality
-        shadowCollider = shadowObject.GetComponent<MeshCollider>();
+        //shadowObject.hideFlags = HideFlags.HideInHierarchy; // hides it from the inspector, doesn’t change functionality
+        shadowObject = new GameObject();
+        shadowObject.AddComponent<MeshFilter>();
+        shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
+        shadowCollider = shadowObject.AddComponent<MeshCollider>();
+        //shadowCollider = shadowObject.GetComponent<MeshCollider>();
         shadowCollider.convex = true; // why is this important?
-        shadowCollider.isTrigger = true; // depends on what you want the collider to do
+        shadowCollider.isTrigger = false;
+        shadowCollider.providesContacts = true;
     }
 
     private void UpdateShadowCollider()
@@ -128,7 +135,7 @@ public class InteractiveShadows : MonoBehaviour
             rayStartPoints[i] = objectPoint;
             rayEndPoints[i] = ComputeIntersectionPoint(objectPoint, raycastDirection); // surface points
 
-            Debug.Log(rayEndPoints[i]);
+            //Debug.Log(rayEndPoints[i]);
 
             shadowColliderVertices[i] = rayStartPoints[i]; // don't have to keep using shadowCollider vertices
 
@@ -150,9 +157,11 @@ public class InteractiveShadows : MonoBehaviour
         
         RaycastHit hit;
 
-        if (Physics.Raycast(objectPoint, direction, out hit, maxRayDistance, ~0 /*targetLayerMask*/, QueryTriggerInteraction.Ignore)) 
+        if (Physics.Raycast(objectPoint, direction, out hit, maxRayDistance, Physics.AllLayers, QueryTriggerInteraction.Collide)) 
         {
-            return hit.point;
+            //return hit.point; // correct intersection point
+
+            return hit.point + direction * extendColliderBy;
         }
 
         return objectPoint + direction * maxRayDistance;
