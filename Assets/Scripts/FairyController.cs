@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(BoxCollider))]
 public class BetterPlayerController : MonoBehaviour
@@ -13,6 +14,7 @@ public class BetterPlayerController : MonoBehaviour
     private bool canSnap = true;
     public float distanceToWall; // at least half as large as the sprite, note that collider boundaries must be slightly greater than this distance
     private HashSet<GameObject> overlappingWalls = new HashSet<GameObject>();
+    [SerializeField] private string winScene;
 
     [Header("Movement")]
     public float moveSpeed = 8f;
@@ -49,6 +51,7 @@ public class BetterPlayerController : MonoBehaviour
             {
                 currentSnappedTo = collider.gameObject;
             }
+            
         }
 
         if (currentSnappedTo != null)
@@ -174,6 +177,11 @@ public class BetterPlayerController : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        if (other.CompareTag("Win"))
+        {
+            Debug.Log("YOU WONNNN");
+            SceneManager.LoadScene(winScene);
+        }
         if (!other.CompareTag("Wall")) return;
         
         overlappingWalls.Add(other.gameObject);
@@ -182,6 +190,8 @@ public class BetterPlayerController : MonoBehaviour
         {
             canSnapTo = other.gameObject;
         }
+
+        
     }
 
     void OnTriggerExit(Collider other)
