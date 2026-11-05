@@ -15,6 +15,8 @@ public class BetterPlayerController : MonoBehaviour
     public float distanceToWall; // at least half as large as the sprite, note that collider boundaries must be slightly greater than this distance
     private HashSet<GameObject> overlappingWalls = new HashSet<GameObject>();
     [SerializeField] private string winScene;
+    [SerializeField] private SpriteRenderer fairySprite;
+    [SerializeField] private Animator animator;
 
     [Header("Movement")]
     public float moveSpeed = 8f;
@@ -77,6 +79,7 @@ public class BetterPlayerController : MonoBehaviour
     {
         if (IsGrounded())
         {   
+            animator.SetBool("jump", true);
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
@@ -85,6 +88,8 @@ public class BetterPlayerController : MonoBehaviour
     void FixedUpdate()
     {
         ResetDistanceAndDirection (); ///////// may be unncecessary in some cases
+        if (IsGrounded() && rb.linearVelocity.y <= 0f)
+            animator.SetBool("jump", false);
         
         // automatically switch walls if in the same direction, but only allow switching again if the movement direction is reversed
         if (Mathf.Abs(moveInput.x) > 0 && (canSnap || moveInput.x * moveInputAtSwitch.x < 0))
@@ -92,6 +97,16 @@ public class BetterPlayerController : MonoBehaviour
             SwitchSnapTo(); // works best for colliders which closely adhere to the walls, null checks are performed in SwitchSnapTo()
         }
 
+        if (Mathf.Abs(moveInput.x) > 0.01f)
+        {
+            fairySprite.flipX = moveInput.x < 0f;
+            animator.SetBool("isWalking", true);
+        }
+        else
+        {
+            animator.SetBool("isWalking", false);
+        }
+        
         // Move with respect to wall, no y-velocity because snapped to wall
         Vector3 targetVelocity = moveInput.x * moveSpeed * transform.right;
 
@@ -168,12 +183,13 @@ public class BetterPlayerController : MonoBehaviour
     
         transform.up = wallNormal;
         transform.rotation = Quaternion.LookRotation(Vector3.up, wallNormal); //////////
-
+        
         float currentDistance = Vector3.Dot(transform.position - currentSnappedTo.transform.position, wallNormal);
 
         transform.position += (distanceToWall - currentDistance) * wallNormal;
 
     }
+
 
     void OnTriggerEnter(Collider other)
     {

@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: -1622430584279761871}
   m_Layer: 0
   m_Name: ceiling
-  m_TagString: Wall
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 269f44682b2e3cd47bf36cd47b298d04, type: 2}
+  - {fileID: 2100000, guid: 8458fd46e6f14004ba4c3522dde6f98e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
