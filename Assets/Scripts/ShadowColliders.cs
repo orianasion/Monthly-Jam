@@ -40,6 +40,7 @@ public class ShadowColliders : MonoBehaviour
     {
         InitializeShadowCollider();
 
+        lightTransform = GameObject.Find("Point Light").transform;
         lightType = lightTransform.GetComponent<Light>().type;
 
         //objectVertices = transform.GetComponent<MeshFilter>().mesh.vertices.Distinct().ToArray(); // distinct points avoids unecessary raycasts
@@ -47,9 +48,6 @@ public class ShadowColliders : MonoBehaviour
         objectVertices = sourceMesh.vertices;
 
         //shadowColliderMesh = new Mesh();
-
-
-        shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
 
         //MeshRenderer renderer = shadowObject.GetComponent<MeshRenderer>();
         //renderer.enabled = true;
@@ -90,6 +88,7 @@ public class ShadowColliders : MonoBehaviour
         //GameObject shadowGameObject = shadowTransform.gameObject;
         //shadowObject.hideFlags = HideFlags.HideInHierarchy; // hides it from the inspector, doesn’t change functionality
         shadowObject = new GameObject();
+        shadowObject.layer = LayerMask.NameToLayer("Shadows");
         shadowObject.AddComponent<MeshFilter>();
         shadowColliderMesh = shadowObject.GetComponent<MeshFilter>().mesh;
         shadowCollider = shadowObject.AddComponent<MeshCollider>();

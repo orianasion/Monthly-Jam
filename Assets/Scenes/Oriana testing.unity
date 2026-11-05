@@ -2353,7 +2353,7 @@ MonoBehaviour:
   shadowObject: {fileID: 0}
   maxRayDistance: 100
   extendColliderBy: 20
-  shadowColliderUpdateTime: 0
+  shadowColliderUpdateTime: 0.02
 --- !u!23 &5733132281857028291
 MeshRenderer:
   m_ObjectHideFlags: 0

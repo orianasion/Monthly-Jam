@@ -81,6 +81,8 @@ public class BetterPlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        ResetDistanceAndDirection (); ///////// may be unncecessary in some cases
+        
         // automatically switch walls if in the same direction, but only allow switching again if the movement direction is reversed
         if (Mathf.Abs(moveInput.x) > 0 && (canSnap || moveInput.x * moveInputAtSwitch.x < 0))
         {
