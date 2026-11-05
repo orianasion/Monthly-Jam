@@ -6,7 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/Scenes/MenuScene.unity
+    guid: a7c30a63f89bb6d429cbc573d890a631
+  - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/WinScene.unity
+    guid: 50b04f6f49a546b45ae716250874f74b
+  - enabled: 1
+    path: Assets/Scenes/Oriana testing.unity
+    guid: 204da03ceaecaba45aa9490840201b8f
   m_configObjects:
+    com.unity.input.settings: {fileID: 11400000, guid: 8eadf0bd6e84a4c43b17551907461ad2, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
